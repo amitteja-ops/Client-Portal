@@ -44,10 +44,10 @@ const fromRow = (r) => ({
 });
 
 const fmt = (n) => {
-  if (!n) return "\u2014";
+  if (!n) return "—";
   const num = parseFloat(String(n).replace(/,/g,""));
-  if (isNaN(num)) return "\u2014";
-  return "\u20b9" + num.toLocaleString("en-IN");
+  if (isNaN(num)) return "—";
+  return "₹" + num.toLocaleString("en-IN");
 };
 
 const MATERIAL_LABELS = {
@@ -172,7 +172,7 @@ function LoginPage({ onLogin }) {
         <button className="pill pill-primary" onClick={handleLogin} disabled={loading}
           style={{width:"100%",padding:"13px",fontSize:15,fontWeight:700,
             opacity:loading?0.6:1,cursor:loading?"not-allowed":"pointer"}}>
-          {loading ? "Verifying\u2026" : "View My Project"}
+          {loading ? "Verifying…" : "View My Project"}
         </button>
 
         <div style={{textAlign:"center",marginTop:20,fontSize:11,color:"rgba(255,255,255,0.25)"}}>
@@ -198,7 +198,7 @@ function Timeline({ status }) {
                 background:cur?"rgba(10,132,255,0.2)":done?"rgba(48,209,88,0.15)":"rgba(255,255,255,0.05)",
                 border:`2px solid ${col}`,display:"flex",alignItems:"center",
                 justifyContent:"center",fontSize:11,color:col,fontWeight:700}}>
-                {done?"\u2713":cur?"\u25cf":"\u25cb"}
+                {done?"✓":cur?"●":"○"}
               </div>
               <div style={{fontSize:9,color:col,fontWeight:cur?700:400,
                 letterSpacing:0.5,whiteSpace:"nowrap"}}>{s}</div>
@@ -234,9 +234,9 @@ function Report({ client, onClose }) {
       {/* Toolbar */}
       <div className="np" style={{background:"#060812",padding:"12px 32px",
         display:"flex",gap:12,alignItems:"center",borderBottom:"3px solid #0A84FF"}}>
-        <button className="pill" onClick={onClose}>\u2190 Back to Dashboard</button>
+        <button className="pill" onClick={onClose}>← Back to Dashboard</button>
         <button className="pill pill-primary" onClick={()=>window.print()}>
-          \ud83d\uddb4 Print / Save PDF
+          🖨️ Print / Save PDF
         </button>
         <span style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginLeft:"auto"}}>
           Tip: Save as PDF in print dialog
@@ -269,7 +269,7 @@ function Report({ client, onClose }) {
               Client Details
             </div>
             <div style={{fontSize:15,fontWeight:700,marginBottom:8}}>{client.name}</div>
-            {[["\ud83d\udccd",client.address],["\ud83d\udcde",client.phone],["\ud83d\udce7",client.email]]
+            {[["📍",client.address],["📞",client.phone],["📧",client.email]]
               .filter(([,v])=>v).map(([ic,v])=>(
               <div key={ic} style={{fontSize:13,color:"#374151",marginBottom:4}}>{ic} {v}</div>
             ))}
@@ -296,7 +296,7 @@ function Report({ client, onClose }) {
           <div style={{marginBottom:28}}>
             <div style={{fontSize:10,fontWeight:700,letterSpacing:2.5,color:"#0A84FF",
               borderBottom:"2px solid #0A84FF",paddingBottom:6,marginBottom:14,textTransform:"uppercase"}}>
-              Scope \u2014 Rooms Covered
+              Scope — Rooms Covered
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
               {client.rooms.map(r=>(
@@ -325,10 +325,10 @@ function Report({ client, onClose }) {
               <tbody>
                 {Object.entries(client.roomDetails).map(([room,rd],i)=>{
                   const area = rd.length&&rd.width
-                    ? (parseFloat(rd.length)*parseFloat(rd.width)).toFixed(0)+" sq ft" : "\u2014";
+                    ? (parseFloat(rd.length)*parseFloat(rd.width)).toFixed(0)+" sq ft" : "—";
                   return (
                     <tr key={room} style={{background:i%2===0?"#fff":"#f8f9fa"}}>
-                      {[`\ud83c\udfe0 ${room}`,rd.length||"\u2014",rd.width||"\u2014",rd.height||"\u2014",area].map((v,j)=>(
+                      {[`🏠 ${room}`,rd.length||"—",rd.width||"—",rd.height||"—",area].map((v,j)=>(
                         <td key={j} style={{padding:"9px 12px",fontSize:12,
                           borderBottom:"1px solid #e5e7eb",fontWeight:j===0?600:400}}>{v}</td>
                       ))}
@@ -355,7 +355,7 @@ function Report({ client, onClose }) {
                   borderRadius:4,overflow:"hidden"}}>
                   <div style={{background:"#1e293b",padding:"8px 14px"}}>
                     <span style={{color:"#fff",fontWeight:700,fontSize:13}}>
-                      \ud83c\udfe0 {room}
+                      🏠 {room}
                     </span>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"2fr 3fr 1fr",
@@ -392,7 +392,7 @@ function Report({ client, onClose }) {
               <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:8,
                 padding:"14px 18px",marginBottom:14}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#15803d",letterSpacing:1,marginBottom:4}}>
-                  \ud83c\udf81 YOUR REFERRAL CODE
+                  🎁 YOUR REFERRAL CODE
                 </div>
                 <div style={{fontSize:22,fontWeight:800,color:"#16a34a",letterSpacing:3}}>
                   {client.referralCode}
@@ -415,7 +415,7 @@ function Report({ client, onClose }) {
               <div style={{display:"flex",justifyContent:"space-between",
                 padding:"8px 0",borderBottom:"1px solid #e5e7eb",fontSize:13}}>
                 <span style={{color:"#6b7280"}}>Discount</span>
-                <span style={{color:"#dc2626"}}>\u2212 {fmt(rebate)}</span>
+                <span style={{color:"#dc2626"}}>− {fmt(rebate)}</span>
               </div>
             )}
             <div style={{display:"flex",justifyContent:"space-between",background:"#1e293b",
@@ -450,7 +450,7 @@ function Report({ client, onClose }) {
 
         <div style={{borderTop:"1px solid #e5e7eb",paddingTop:16,
           display:"flex",justifyContent:"space-between",fontSize:11,color:"#9ca3af"}}>
-          <span>High Rise Interiors Studio \u00b7 Hyderabad</span>
+          <span>High Rise Interiors Studio · Hyderabad</span>
           <span>Generated {today}</span>
         </div>
       </div>
@@ -515,7 +515,7 @@ function Dashboard({ session, onLogout }) {
         {/* Welcome */}
         <div className="slide-up" style={{marginBottom:22}}>
           <div style={{fontSize:26,fontWeight:700,color:"#fff",letterSpacing:-0.5,marginBottom:4}}>
-            Welcome, {client.name.split(" ")[0]} \ud83d\udc4b
+            Welcome, {client.name.split(" ")[0]} 👋
           </div>
           <div style={{fontSize:13,color:"rgba(255,255,255,0.45)"}}>
             Your project at High Rise Interiors
@@ -528,7 +528,7 @@ function Dashboard({ session, onLogout }) {
             <div>
               <div style={{fontSize:18,fontWeight:700,color:"#fff",marginBottom:4}}>{client.name}</div>
               <div style={{fontSize:13,color:"rgba(255,255,255,0.45)"}}>
-                {client.projectType}{client.style?" \u00b7 "+client.style:""}
+                {client.projectType}{client.style?" · "+client.style:""}
               </div>
             </div>
             <span className={BADGE_CLASS[client.status]||"badge"}>{client.status}</span>
@@ -551,8 +551,8 @@ function Dashboard({ session, onLogout }) {
             <div style={{fontSize:10,fontWeight:700,letterSpacing:2,color:"rgba(255,255,255,0.5)",
               textTransform:"uppercase",borderBottom:"1px solid rgba(255,255,255,0.1)",
               paddingBottom:7,marginBottom:12}}>Contact</div>
-            {[["\ud83d\udcde",client.phone],["\ud83d\udce7",client.email],
-              ["\ud83d\udccd",client.address]].filter(([,v])=>v).map(([ic,v])=>(
+            {[["📞",client.phone],["📧",client.email],
+              ["📍",client.address]].filter(([,v])=>v).map(([ic,v])=>(
               <div key={ic} className="info-row">
                 <span style={{color:"rgba(255,255,255,0.4)",marginRight:8}}>{ic}</span>
                 <span style={{fontSize:13,wordBreak:"break-all"}}>{v}</span>
@@ -583,7 +583,7 @@ function Dashboard({ session, onLogout }) {
               {client.rooms.map(r=>(
                 <span key={r} style={{background:"rgba(10,132,255,0.15)",color:"#0A84FF",
                   border:"1px solid rgba(10,132,255,0.35)",padding:"5px 14px",
-                  borderRadius:100,fontSize:12,fontWeight:600}}>\ud83c\udfe0 {r}</span>
+                  borderRadius:100,fontSize:12,fontWeight:600}}>🏠 {r}</span>
               ))}
             </div>
           </div>
@@ -622,13 +622,13 @@ function Dashboard({ session, onLogout }) {
           <div className="glass slide-up" style={{padding:"18px",marginBottom:12,
             background:"rgba(48,209,88,0.08)",borderColor:"rgba(48,209,88,0.3)"}}>
             <div style={{fontSize:11,fontWeight:700,color:"#30D158",letterSpacing:1,marginBottom:6}}>
-              \ud83c\udf81 YOUR REFERRAL CODE
+              🎁 YOUR REFERRAL CODE
             </div>
             <div style={{fontSize:26,fontWeight:800,color:"#30D158",letterSpacing:4,marginBottom:5}}>
               {client.referralCode}
             </div>
             <div style={{fontSize:12,color:"rgba(255,255,255,0.45)"}}>
-              Share with friends \u2014 they get 5% off, you earn cashback!
+              Share with friends — they get 5% off, you earn cashback!
             </div>
           </div>
         )}
@@ -638,16 +638,16 @@ function Dashboard({ session, onLogout }) {
           display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div>
             <div style={{fontSize:14,fontWeight:600,color:"#fff",marginBottom:3}}>
-              \ud83d\udcc4 Project Report
+              📄 Project Report
             </div>
             <div style={{fontSize:12,color:"rgba(255,255,255,0.45)"}}>
-              Full summary with materials \u2014 printable PDF
+              Full summary with materials — printable PDF
             </div>
           </div>
           <button className="pill pill-primary"
             onClick={()=>setView("report")}
             style={{padding:"10px 22px",fontSize:13,flexShrink:0}}>
-            View Report \u2192
+            View Report →
           </button>
         </div>
       </div>
