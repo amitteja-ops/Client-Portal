@@ -84,29 +84,35 @@ function LoginPage({ onLogin }) {
     }
     setLoading(true); setError("");
     try {
-      // Step 1: Find customer by email
+      // Step 1: Find all projects for this email
       const rows = await query(`email=eq.${encodeURIComponent(email.trim().toLowerCase())}`);
       if (!rows || rows.length === 0) {
         setError("No project found for this email. Contact High Rise Interiors.");
         setLoading(false); return;
       }
-      const customer = fromRow(rows[0]);
 
-      // Step 2: Verify access code (case-insensitive)
+      // Step 2: Verify access code — just needs to match ONE project for this email
       const enteredCode = code.trim().toUpperCase();
-      const storedCode  = (customer.clientAccessCode || "").toUpperCase();
+      const allCustomers = rows.map(fromRow);
 
-      if (!storedCode) {
+      // Check if any project has an access code set
+      const anySodeSet = allCustomers.some(c => c.clientAccessCode);
+      if (!anySodeSet) {
         setError("Access not set up yet. Contact High Rise Interiors.");
         setLoading(false); return;
       }
-      if (enteredCode !== storedCode) {
+
+      // Verify the code matches
+      const codeValid = allCustomers.some(c =>
+        (c.clientAccessCode || "").toUpperCase() === enteredCode
+      );
+      if (!codeValid) {
         setError("Incorrect access code. Please check and try again.");
         setLoading(false); return;
       }
 
-      // Step 3: Login success
-      onLogin({ customer });
+      // Step 3: Login success — give access to ALL their projects
+      onLogin({ customer: allCustomers[0], allProjects: allCustomers });
 
     } catch (e) {
       setError("Connection error. Please try again.");
@@ -185,31 +191,64 @@ function LoginPage({ onLogin }) {
 
 // ── Project Timeline ──────────────────────────────────────────────────
 function Timeline({ status }) {
-  const idx = STEPS.indexOf(status);
+  // Steps with connecting lines between them
+  // Progress fills the LINES, not the dots
+  // Lead = 0 lines filled, Active = 1 line, InProgress = 2 lines, Completed = 3 lines
+  const statusOrder = { Lead:0, Active:1, "In Progress":2, Completed:3, "On Hold":2 };
+  const filledLines = statusOrder[status] ?? 0;
+  const isOnHold = status === "On Hold";
+  const isCompleted = status === "Completed";
+
   return (
-    <div style={{display:"flex",alignItems:"center",marginTop:16}}>
-      {STEPS.map((s,i) => {
-        const done=i<idx, cur=i===idx;
-        const col = cur?"#0A84FF":done?"#30D158":"rgba(255,255,255,0.2)";
-        return (
-          <div key={s} style={{display:"flex",alignItems:"center",flex:i<STEPS.length-1?1:"auto"}}>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-              <div style={{width:28,height:28,borderRadius:"50%",
-                background:cur?"rgba(10,132,255,0.2)":done?"rgba(48,209,88,0.15)":"rgba(255,255,255,0.05)",
-                border:`2px solid ${col}`,display:"flex",alignItems:"center",
-                justifyContent:"center",fontSize:11,color:col,fontWeight:700}}>
-                {done?"✓":cur?"●":"○"}
+    <div>
+      {isOnHold && (
+        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:10,marginBottom:6,
+          background:"rgba(255,69,58,0.12)",border:"1px solid rgba(255,69,58,0.3)",
+          borderRadius:8,padding:"5px 12px",width:"fit-content"}}>
+          <span style={{fontSize:12}}>⏸</span>
+          <span style={{fontSize:11,fontWeight:600,color:"#FF453A"}}>Project On Hold</span>
+        </div>
+      )}
+      <div style={{display:"flex",alignItems:"center",marginTop:10}}>
+        {STEPS.map((s,i) => {
+          // Dot is "done" (green) only if we are PAST this step
+          const done = filledLines > i;
+          // Dot is "current" (blue) if this is the active step
+          const cur  = filledLines === i && !isOnHold && !isCompleted;
+          const col  = isCompleted?"#30D158"
+                     : isOnHold && i===2?"#FF453A"
+                     : done?"#30D158"
+                     : cur?"#0A84FF"
+                     : "rgba(255,255,255,0.2)";
+          return (
+            <div key={s} style={{display:"flex",alignItems:"center",
+              flex:i<STEPS.length-1?1:"auto"}}>
+              <div style={{display:"flex",flexDirection:"column",
+                alignItems:"center",gap:4}}>
+                <div style={{width:26,height:26,borderRadius:"50%",
+                  background: done||isCompleted?"rgba(48,209,88,0.2)"
+                            : cur?"rgba(10,132,255,0.2)"
+                            : "rgba(255,255,255,0.05)",
+                  border:`2px solid ${col}`,
+                  display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:11,color:col,fontWeight:700}}>
+                  {done||isCompleted?"✓":cur?"●":"○"}
+                </div>
+                <div style={{fontSize:9,color:col,
+                  fontWeight:cur||done||isCompleted?600:400,
+                  letterSpacing:0.3,whiteSpace:"nowrap"}}>{s}</div>
               </div>
-              <div style={{fontSize:9,color:col,fontWeight:cur?700:400,
-                letterSpacing:0.5,whiteSpace:"nowrap"}}>{s}</div>
+              {i<STEPS.length-1 && (
+                <div style={{flex:1,height:2,margin:"0 4px",marginBottom:16,
+                  borderRadius:1,
+                  background: filledLines>i
+                    ? (isOnHold&&i===1?"#FF453A":"#30D158")
+                    : "rgba(255,255,255,0.1)"}}/>
+              )}
             </div>
-            {i<STEPS.length-1 && (
-              <div style={{flex:1,height:2,margin:"0 4px",marginBottom:16,
-                background:done?"#30D158":"rgba(255,255,255,0.1)",borderRadius:1}}/>
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -460,22 +499,30 @@ function Report({ client, onClose }) {
 
 // ── Main Dashboard ────────────────────────────────────────────────────
 function Dashboard({ session, onLogout }) {
-  const { customer } = session;
-  const [view,   setView]   = useState("home");
-  const [client, setClient] = useState(customer);
+  const { customer, allProjects = [customer] } = session;
+  const [view,      setView]    = useState("home");
+  const [client,    setClient]  = useState(customer);
+  const [projIdx,   setProjIdx] = useState(0);
+  const multiProject = allProjects.length > 1;
 
   // Refresh latest data on mount
   useEffect(()=>{
     query(`id=eq.${client.id}`).then(rows=>{
       if (rows?.length) setClient(fromRow(rows[0]));
     }).catch(()=>{});
-  },[]);
+  },[client.id]);
+
+  const switchProject = (idx) => {
+    setProjIdx(idx);
+    setClient(allProjects[idx]);
+    setView("home");
+  };
 
   if (view==="report") return <Report client={client} onClose={()=>setView("home")}/>;
 
   const pct = (()=>{
-    const i = STEPS.indexOf(client.status);
-    return i<0 ? 0 : Math.round((i+1)/STEPS.length*100);
+    const map = { Lead:0, Active:34, "In Progress":67, Completed:100, "On Hold":null };
+    return map[client.status] ?? 0;
   })();
 
   return (
@@ -522,6 +569,32 @@ function Dashboard({ session, onLogout }) {
           </div>
         </div>
 
+        {/* Project switcher — shown only if multiple projects */}
+        {multiProject && (
+          <div className="glass slide-up" style={{padding:"14px 18px",marginBottom:14,
+            background:"rgba(10,132,255,0.08)",borderColor:"rgba(10,132,255,0.25)"}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,color:"rgba(255,255,255,0.5)",
+              textTransform:"uppercase",marginBottom:10}}>Your Projects</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {allProjects.map((p,i) => (
+                <button key={p.id} onClick={()=>switchProject(i)}
+                  style={{padding:"8px 16px",borderRadius:100,border:"none",
+                    cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,
+                    transition:"all 0.18s ease",
+                    background:i===projIdx?"rgba(10,132,255,0.3)":"rgba(255,255,255,0.08)",
+                    color:i===projIdx?"#0A84FF":"rgba(255,255,255,0.7)",
+                    border:i===projIdx?"1px solid rgba(10,132,255,0.5)":"1px solid rgba(255,255,255,0.15)"}}>
+                  {p.projectType||"Project"} {i+1}
+                  <span style={{fontSize:10,marginLeft:6,
+                    color:i===projIdx?"rgba(10,132,255,0.7)":"rgba(255,255,255,0.35)"}}>
+                    {p.status}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Status card */}
         <div className="glass slide-up" style={{padding:"22px",marginBottom:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
@@ -540,7 +613,8 @@ function Dashboard({ session, onLogout }) {
           <div style={{height:6,background:"rgba(255,255,255,0.08)",borderRadius:3,overflow:"hidden",marginBottom:4}}>
             <div style={{height:"100%",width:`${pct}%`,
               background:"linear-gradient(90deg,#0A84FF,#BF5AF2)",
-              borderRadius:3,transition:"width 0.6s ease"}}/>
+              borderRadius:3,transition:"width 0.6s ease",
+              display:pct===0?"none":"block"}}/>
           </div>
           <Timeline status={client.status}/>
         </div>
