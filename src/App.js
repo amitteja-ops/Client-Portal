@@ -318,8 +318,8 @@ function Report({ client, onClose }) {
               borderBottom:"2px solid #0A84FF",paddingBottom:6,marginBottom:14,textTransform:"uppercase"}}>
               Project Details
             </div>
-            {[["Type",client.projectType],["Style",client.style],
-              ["Start",client.startDate],["Timeline",client.timeline],
+            {[["Property",client.propertyType],["Type",client.projectType],["Style",client.style],
+              ["Budget",client.budget],["Start",client.startDate],["Timeline",client.timeline],
               ["Status",client.status]]
               .filter(([,v])=>v).map(([l,v])=>(
               <div key={l} style={{display:"flex",gap:8,fontSize:13,marginBottom:6}}>
@@ -637,8 +637,8 @@ function Dashboard({ session, onLogout }) {
             <div style={{fontSize:10,fontWeight:700,letterSpacing:2,color:"rgba(255,255,255,0.5)",
               textTransform:"uppercase",borderBottom:"1px solid rgba(255,255,255,0.1)",
               paddingBottom:7,marginBottom:12}}>Project</div>
-            {[["Start",client.startDate],["Duration",client.timeline],
-              ["Budget",client.budget]].filter(([,v])=>v).map(([l,v])=>(
+            {[["Property Type",client.propertyType],["Start",client.startDate],["Duration",client.timeline],
+              ["Budget",client.budget],["Style",client.style]].filter(([,v])=>v).map(([l,v])=>(
               <div key={l} className="info-row">
                 <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>{l}</span>
                 <span style={{fontSize:13,fontWeight:500}}>{v}</span>
